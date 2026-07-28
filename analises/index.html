@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alicerce — Gerenciador de Analises</title>
+  <meta name="description" content="Gerenciador de Analises (pastas de credito) — Alicerce.">
+  <!--
+    Wrapper do #13 (Gerenciador de Analises) hospedado junto do hub. Embute a /exec
+    @2 publicada do #13 (ANYONE_ANONYMOUS + login proprio; ja tem ALLOWALL). Serve
+    a mesma funcao dos wrappers do #9 e #11: contornar o roteador /u/N/. O card do
+    hub aponta para /analises/ — nunca a /exec direta.
+
+    Quando o #13 publicar os 4 fixes pendentes (Alcada 2, sessao futura), a URL /exec
+    NAO muda (redeploy -i = mesmo deploymentId), entao este wrapper continua valido.
+  -->
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #0d1117; }
+    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #c9d1d9; text-align: center;
+    }
+    #fallback a { color: #58a6ff; }
+    .loading {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font: 14px system-ui, sans-serif; color: #8b949e; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Carregando o Gerenciador de Analises…</div>
+
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbzEBFJcsLMEnI9zp6gdYUb-_nA6HPkEnXrjT_AtvoqP1glWSYCXRZQJofO5DNGQmy5O/exec"
+    title="Alicerce — Gerenciador de Analises"
+    allow="clipboard-write; clipboard-read"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('loading').style.display='none'"></iframe>
+
+  <div id="fallback">
+    <div>
+      <p><strong>Nao foi possivel carregar.</strong></p>
+      <p>Abra o link diretamente:
+        <a href="https://script.google.com/macros/s/AKfycbzEBFJcsLMEnI9zp6gdYUb-_nA6HPkEnXrjT_AtvoqP1glWSYCXRZQJofO5DNGQmy5O/exec" target="_blank" rel="noopener">abrir o Gerenciador de Analises</a>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    setTimeout(function () {
+      var ld = document.getElementById('loading');
+      if (ld && ld.style.display !== 'none') {
+        ld.style.display = 'none';
+        document.getElementById('fallback').style.display = 'flex';
+      }
+    }, 12000);
+  </script>
+</body>
+</html>

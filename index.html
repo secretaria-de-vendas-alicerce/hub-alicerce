@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alicerce — Hub</title>
+  <meta name="description" content="Portal de sistemas, setores e ferramentas da Alicerce.">
+  <!--
+    WRAPPER ANTI /u/N/ — por que este arquivo existe
+    -------------------------------------------------
+    O web app do Apps Script e servido em script.google.com/macros/s/.../exec.
+    Com 2+ contas Google logadas, o Google redireciona a /exec para /u/1/, /u/2/...
+    e mostra "Nao foi possivel abrir o arquivo". Carregando a MESMA /exec dentro de
+    um <iframe credentialless> a partir de um dominio que NAO e google.com, o app
+    abre igual em qualquer navegador Chromium. Ver o wrapper do #9 e do #11.
+
+    Pre-requisitos (feitos no app #14):
+      - Implantacao: "Executar como: Eu" + "Quem pode acessar: Qualquer pessoa".
+      - doGet(): setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).
+
+    O src abaixo e a /exec publicada do hub (@1, deploy de 24/07).
+
+    NOTAS (R-01): o localStorage do iframe credentialless e efemero. Este wrapper
+    (origem estavel github.io) guarda as notas e responde ao hub por postMessage.
+  -->
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #0d1117; }
+    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #c9d1d9; text-align: center;
+    }
+    #fallback a { color: #58a6ff; }
+    .loading {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font: 14px system-ui, sans-serif; color: #8b949e; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Carregando o hub…</div>
+
+  <!--
+    credentialless: carrega o iframe num contexto efemero, SEM os cookies de sessao
+    do Google (igual a uma aba anonima) — e o que contorna o roteador /u/N/.
+    Chromium (Chrome/Edge 110+). Firefox/Safari ignoram (fallback: link direto).
+  -->
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbwp4plsaMBd71fl_tnb_Heh3eaDe2VtKdS7Dj9jTzxY016M82Ry-OdGEqxxK2ViloQ6/exec"
+    title="Alicerce — Hub"
+    allow="clipboard-write; clipboard-read"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('loading').style.display='none'"></iframe>
+
+  <div id="fallback">
+    <div>
+      <p><strong>Nao foi possivel carregar.</strong></p>
+      <p>Abra o link diretamente:
+        <a id="directLink" href="https://script.google.com/macros/s/AKfycbwp4plsaMBd71fl_tnb_Heh3eaDe2VtKdS7Dj9jTzxY016M82Ry-OdGEqxxK2ViloQ6/exec" target="_blank" rel="noopener">abrir o hub</a>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Fallback: se o iframe nao sinalizar load em ~12s, oferece o link direto.
+    setTimeout(function () {
+      var ld = document.getElementById('loading');
+      if (ld && ld.style.display !== 'none') {
+        ld.style.display = 'none';
+        document.getElementById('fallback').style.display = 'flex';
+      }
+    }, 12000);
+
+    // Ponte de notas (R-01): o hub (iframe efemero) pede/salva; guardamos aqui.
+    var NOTAS_KEY = 'alicerce-notas';
+    var iframe = document.getElementById('app');
+    window.addEventListener('message', function (ev) {
+      if (ev.source !== iframe.contentWindow) return; // so o nosso iframe
+      var d = ev.data;
+      if (!d) return;
+      if (d.tipo === 'hub-notas-get') {
+        var v = '';
+        try { v = localStorage.getItem(NOTAS_KEY) || ''; } catch (e) {}
+        ev.source.postMessage({ tipo: 'hub-notas-value', value: v }, '*');
+      } else if (d.tipo === 'hub-notas-set') {
+        try { localStorage.setItem(NOTAS_KEY, String(d.value || '')); } catch (e) {}
+      }
+    });
+  </script>
+</body>
+</html>
