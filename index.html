@@ -18,7 +18,9 @@
       - Implantacao: "Executar como: Eu" + "Quem pode acessar: Qualquer pessoa".
       - doGet(): setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).
 
-    O src abaixo e a /exec publicada do hub (@1, deploy de 24/07).
+    O src abaixo e a /exec de PRODUCAO do hub. O deploymentId nunca muda (o
+    redeploy e sempre no MESMO id, por isso o endereco da equipe e estavel):
+    hoje serve a @5 = Hub v0.2.0 (07/09/2026). Rollback: redeploy -V 4.
 
     NOTAS (R-01): o localStorage do iframe credentialless e efemero. Este wrapper
     (origem estavel github.io) guarda as notas e responde ao hub por postMessage.
@@ -77,19 +79,34 @@
       }
     }, 12000);
 
-    // Ponte de notas (R-01): o hub (iframe efemero) pede/salva; guardamos aqui.
-    var NOTAS_KEY = 'alicerce-notas';
+    // Ponte de estado (R-01): o localStorage do iframe credentialless e EFEMERO,
+    // entao quem guarda e este wrapper (origem estavel github.io). O hub pede e
+    // salva por postMessage; aqui e o unico lugar onde o valor dura.
+    //
+    // Duas chaves, mesmo protocolo:
+    //   notas   -> hub-notas-get / hub-notas-value / hub-notas-set  (v0.1.0)
+    //   fixados -> hub-fix-get   / hub-fix-value   / hub-fix-set    (v0.2.0)
+    // Os nomes das mensagens de notas NAO mudaram de proposito: um hub v0.1.0
+    // servido por este wrapper continua funcionando igual. E um hub v0.2.0 num
+    // wrapper velho tambem nao quebra — ele so nao recebe resposta de 'hub-fix-get'
+    // e fica com a faixa "Nada fixado ainda".
+    var CHAVES = { 'hub-notas': 'alicerce-notas', 'hub-fix': 'hub-fixados' };
     var iframe = document.getElementById('app');
     window.addEventListener('message', function (ev) {
       if (ev.source !== iframe.contentWindow) return; // so o nosso iframe
       var d = ev.data;
-      if (!d) return;
-      if (d.tipo === 'hub-notas-get') {
+      if (!d || typeof d.tipo !== 'string') return;
+      var corte = d.tipo.lastIndexOf('-');
+      var prefixo = d.tipo.slice(0, corte);
+      var acao = d.tipo.slice(corte + 1);
+      var chave = CHAVES[prefixo];
+      if (!chave) return;
+      if (acao === 'get') {
         var v = '';
-        try { v = localStorage.getItem(NOTAS_KEY) || ''; } catch (e) {}
-        ev.source.postMessage({ tipo: 'hub-notas-value', value: v }, '*');
-      } else if (d.tipo === 'hub-notas-set') {
-        try { localStorage.setItem(NOTAS_KEY, String(d.value || '')); } catch (e) {}
+        try { v = localStorage.getItem(chave) || ''; } catch (e) {}
+        ev.source.postMessage({ tipo: prefixo + '-value', value: v }, '*');
+      } else if (acao === 'set') {
+        try { localStorage.setItem(chave, String(d.value || '')); } catch (e) {}
       }
     });
   </script>
