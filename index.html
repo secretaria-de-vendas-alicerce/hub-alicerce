@@ -91,16 +91,30 @@
     // wrapper velho tambem nao quebra — ele so nao recebe resposta de 'hub-fix-get'
     // e fica com a faixa "Nada fixado ainda".
     var CHAVES = { 'hub-notas': 'alicerce-notas', 'hub-fix': 'hub-fixados' };
-    var iframe = document.getElementById('app');
+
+    // Quem fala com a gente NAO e o filho direto do iframe. O Apps Script aninha
+    // mais dois frames no meio:
+    //   este wrapper > /macros/s/.../exec > /userCodeAppPanel > /blank (o app)
+    // A guarda daqui era `ev.source === iframe.contentWindow`, e do outro lado o
+    // hub postava em `window.parent` — os dois errados pelo mesmo motivo. Por isso
+    // a ponte das NOTAS nunca funcionou no ar desde julho: o wrapper nao recebia
+    // mensagem nenhuma, e o fallback local do hub cobria o caso comum em silencio.
+    // Medido na arvore de frames de producao em 07/09.
+    //
+    // A guarda que vale e a ORIGEM: so o host que serve o app do Apps Script.
+    function origemConfiavel(o) {
+      return o === 'https://script.google.com'
+        || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(o);
+    }
     window.addEventListener('message', function (ev) {
-      if (ev.source !== iframe.contentWindow) return; // so o nosso iframe
+      if (!origemConfiavel(ev.origin)) return;
       var d = ev.data;
       if (!d || typeof d.tipo !== 'string') return;
       var corte = d.tipo.lastIndexOf('-');
       var prefixo = d.tipo.slice(0, corte);
-      var acao = d.tipo.slice(corte + 1);
       var chave = CHAVES[prefixo];
       if (!chave) return;
+      var acao = d.tipo.slice(corte + 1);
       if (acao === 'get') {
         var v = '';
         try { v = localStorage.getItem(chave) || ''; } catch (e) {}
