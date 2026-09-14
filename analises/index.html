@@ -7,12 +7,23 @@
   <meta name="description" content="Gerenciador de Analises (pastas de credito) — Alicerce.">
   <!--
     Wrapper do #13 (Gerenciador de Analises) hospedado junto do hub. Embute a /exec
-    @2 publicada do #13 (ANYONE_ANONYMOUS + login proprio; ja tem ALLOWALL). Serve
-    a mesma funcao dos wrappers do #9 e #11: contornar o roteador /u/N/. O card do
+    publicada do #13 (ANYONE_ANONYMOUS + login proprio; ja tem ALLOWALL). Serve a
+    mesma funcao dos wrappers do #9 e #11: contornar o roteador /u/N/. O card do
     hub aponta para /analises/ — nunca a /exec direta.
 
-    Quando o #13 publicar os 4 fixes pendentes (Alcada 2, sessao futura), a URL /exec
-    NAO muda (redeploy -i = mesmo deploymentId), entao este wrapper continua valido.
+    ATENCAO, e foi exatamente o que quebrou (medido em 14/09/2026): este arquivo
+    apostava que "a URL /exec NAO muda (redeploy -i = mesmo deploymentId), entao
+    este wrapper continua valido". A premissa vale para redeploy no MESMO
+    deployment, e NAO para o deployment ser recriado. O antigo AKfycbzEBFJ...
+    passou a responder HTTP 404, e nada aqui acusava: o `onload` do iframe dispara
+    IGUAL numa pagina de erro do Google, entao o fallback de 12 s sumia junto e a
+    equipe via a tela de erro.
+
+    URL atual: AKfycbz2g8... — a /exec do #13, @25 (v2.1.0) desde 14/09/2026.
+
+    COMO CONFERIR (nao confie no iframe "carregar"):
+      clasp deployments                      # a /exec tem de estar NESTA lista
+      curl -sI -L ".../exec" | head -1       # tem de ser 200, nunca 404
   -->
   <style>
     :root { color-scheme: dark; }
@@ -38,7 +49,7 @@
   <iframe
     id="app"
     credentialless
-    src="https://script.google.com/macros/s/AKfycbzEBFJcsLMEnI9zp6gdYUb-_nA6HPkEnXrjT_AtvoqP1glWSYCXRZQJofO5DNGQmy5O/exec"
+    src="https://script.google.com/macros/s/AKfycbz2g8Y56CsBxAfeHJSAWVKnR1XwbAIw6DeMbgL_Rw1qUKX1Bj8b5RPX-5Kq4L-zuHQA/exec"
     title="Alicerce — Gerenciador de Analises"
     allow="clipboard-write; clipboard-read"
     referrerpolicy="no-referrer"
@@ -48,7 +59,7 @@
     <div>
       <p><strong>Nao foi possivel carregar.</strong></p>
       <p>Abra o link diretamente:
-        <a href="https://script.google.com/macros/s/AKfycbzEBFJcsLMEnI9zp6gdYUb-_nA6HPkEnXrjT_AtvoqP1glWSYCXRZQJofO5DNGQmy5O/exec" target="_blank" rel="noopener">abrir o Gerenciador de Analises</a>.
+        <a href="https://script.google.com/macros/s/AKfycbz2g8Y56CsBxAfeHJSAWVKnR1XwbAIw6DeMbgL_Rw1qUKX1Bj8b5RPX-5Kq4L-zuHQA/exec" target="_blank" rel="noopener">abrir o Gerenciador de Analises</a>.
       </p>
     </div>
   </div>
