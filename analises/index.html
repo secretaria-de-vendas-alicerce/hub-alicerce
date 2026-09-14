@@ -23,7 +23,11 @@
 
     COMO CONFERIR (nao confie no iframe "carregar"):
       clasp deployments                      # a /exec tem de estar NESTA lista
-      curl -sI -L ".../exec" | head -1       # tem de ser 200, nunca 404
+      curl -s -L -o /dev/null -w "%{http_code}" ".../exec"   # 200, nunca 404
+
+    O probe e GET, e nao HEAD: `curl -I` no Apps Script devolve 403 mesmo com a
+    /exec viva (medido em 14/09). Um HEAD aqui reprova a URL certa e manda a
+    proxima pessoa procurar defeito onde nao tem.
   -->
   <style>
     :root { color-scheme: dark; }
