@@ -19,27 +19,55 @@
       - doGet(): setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).
 
     O src abaixo e a /exec de PRODUCAO do hub. O deploymentId nunca muda (o
-    redeploy e sempre no MESMO id, por isso o endereco da equipe e estavel):
-    hoje serve a @5 = Hub v0.2.0 (07/09/2026). Rollback: redeploy -V 4.
+    redeploy e sempre no MESMO id, por isso o endereco da equipe e estavel).
+    Qual versao esta servida e qual e o rollback: HANDOFF.md do app #14 — aqui a
+    frase envelhecia sozinha (dizia "@5 = v0.2.0" um mes depois).
 
     NOTAS (R-01): o localStorage do iframe credentialless e efemero. Este wrapper
     (origem estavel github.io) guarda as notas e responde ao hub por postMessage.
   -->
   <style>
-    :root { color-scheme: dark; }
-    html, body { margin: 0; height: 100%; background: #0d1117; }
-    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    /*
+      SAFE AREA (ORD-HUB-MOBILE-001 §4) — por que estas 3 regras existem
+      -----------------------------------------------------------------
+      Dentro de um iframe, env(safe-area-inset-*) vale ZERO. O hub, para a equipe,
+      roda SEMPRE dentro deste iframe, e a barra inferior dele usa esse valor: sem
+      tratar aqui, no iPhone e nos Android com barra de gestos a barra do hub fica
+      parcialmente coberta — o rodape do portal, inacessivel. Quem tem a informacao
+      e esta pagina.
+
+      A altura do #app e CALCULADA, e nao inset/bottom: <iframe> e elemento
+      SUBSTITUIDO, entao com height:auto o navegador usa a altura intrinseca dele
+      (150 px!) e descarta o bottom — o hub inteiro vira uma faixa de 150 px. Foi o
+      que aconteceu ao seguir a receita a risca; quem pegou foi o ponte-wrapper.js.
+
+      A faixa que sobra fica com a cor da barra do hub (= --surface). Este wrapper
+      NAO sabe o tema escolhido dentro do hub — a ponte postMessage so carrega notas
+      e fixados —, entao seguimos o tema do APARELHO. Se a pessoa forcar no hub o
+      tema contrario ao do sistema, a faixa de ~34 px destoa; decisao do Diretor em
+      19/09, e o conserto seria estender a ponte com {tipo:'tema'}.
+    */
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; background: #fafafa; }  /* = --surface claro do hub */
+    #app { position: fixed; inset: 0; width: 100%; height: calc(100% - env(safe-area-inset-bottom)); border: 0; display: block; }
     #fallback {
       position: fixed; inset: 0; display: none;
       align-items: center; justify-content: center; padding: 24px;
       font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      color: #c9d1d9; text-align: center;
+      color: #27272a; text-align: center;
     }
-    #fallback a { color: #58a6ff; }
+    #fallback a { color: #2563eb; }
     .loading {
       position: fixed; inset: 0; display: flex;
       align-items: center; justify-content: center;
-      font: 14px system-ui, sans-serif; color: #8b949e; pointer-events: none;
+      font: 14px system-ui, sans-serif; color: #6c6c75; pointer-events: none;
+    }
+    /* o fundo claro tornaria o texto do fallback invisivel no escuro, e vice-versa */
+    @media (prefers-color-scheme: dark) {
+      html, body { background: #18181b; }                         /* = --surface escuro do hub */
+      #fallback { color: #c9d1d9; }
+      #fallback a { color: #58a6ff; }
+      .loading { color: #8b949e; }
     }
   </style>
 </head>
