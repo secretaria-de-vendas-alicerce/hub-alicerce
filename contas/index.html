@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alicerce — Contas e Estoque</title>
+  <meta name="description" content="Contas e Estoque — contas a pagar, estoque e cofre de senhas da Alicerce.">
+  <!--
+    WRAPPER ANTI /u/N/ — por que este arquivo existe
+    -------------------------------------------------
+    O web app do Apps Script e servido em script.google.com/macros/s/.../exec.
+    Quando o visitante tem 2+ contas Google logadas, o Google redireciona a /exec
+    para /u/1/, /u/2/... chuta o indice errado e mostra "Nao foi possivel abrir o
+    arquivo". Carregando a MESMA /exec dentro de um <iframe> a partir de um dominio
+    que NAO e google.com, o Google entrega o app como sub-recurso e nao roda esse
+    roteador de conta — abre igual em qualquer navegador, com qualquer conta.
+
+    A identidade do operador vem do LOGIN DO PROPRIO APP (usuario+senha), nao da
+    conta Google.
+
+    Pre-requisitos (ja feitos no app):
+      - Implantacao: "Executar como: Eu" + "Quem pode acessar: Qualquer pessoa".
+      - doGet(): setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).
+
+    A /exec abaixo e a do deployment criado pelo Diretor em 21/09/2026 (hoje @2,
+    v1.0.0). Mora junto do hub, como o /analises/ do #13. Publicar de novo com
+    `deploy -i <mesmo id>` mantem este link; criar OUTRO deployment o mata (Regra 30).
+  -->
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; background: #0f1115; }
+    /* iframe ocupa o viewport inteiro, respeitando notch no mobile */
+    #app {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      border: 0; display: block;
+    }
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #e6e8eb; text-align: center;
+    }
+    #fallback a { color: #7aa2ff; }
+    .loading {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font: 14px system-ui, sans-serif; color: #8b94a3;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Carregando Contas e Estoque…</div>
+
+  <!--
+    credentialless: carrega o iframe num contexto efemero, SEM enviar os cookies
+    de sessao do Google (igual a uma aba anonima). E isso que contorna o roteador
+    de conta /u/N/. Suportado em Chromium (Chrome/Edge 110+). Firefox/Safari
+    ignoram o atributo (fallback: link direto).
+  -->
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbyt3aOWNj_IKb497KrLv0fOhkE0o93i9B80XCqSoZ_4uhKsX-OXESPZOjzQrzRwy25s/exec"
+    title="Alicerce — Contas e Estoque"
+    allow="clipboard-write; clipboard-read; fullscreen"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('loading').style.display='none'"></iframe>
+
+  <div id="fallback">
+    <div>
+      <p><strong>Nao foi possivel carregar.</strong></p>
+      <p>Abra o link diretamente:
+        <a id="directLink" href="https://script.google.com/macros/s/AKfycbyt3aOWNj_IKb497KrLv0fOhkE0o93i9B80XCqSoZ_4uhKsX-OXESPZOjzQrzRwy25s/exec" target="_blank" rel="noopener">abrir Contas e Estoque</a>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Se o iframe nao sinalizar load em ~12s, oferece o link direto como rede de seguranca.
+    // O onload dispara igual numa pagina 404: a conferencia do link e de FORA (Regra 30).
+    setTimeout(function () {
+      var ld = document.getElementById('loading');
+      if (ld && ld.style.display !== 'none') {
+        ld.style.display = 'none';
+        document.getElementById('fallback').style.display = 'flex';
+      }
+    }, 12000);
+  </script>
+</body>
+</html>

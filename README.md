@@ -7,6 +7,7 @@ partir de um dominio que nao e `google.com`. Mesmo padrao dos wrappers do #9 e #
 wrapper/
 ├── index.html            -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/
 ├── analises/index.html   -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/analises/  (#13)
+├── contas/index.html     -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/contas/  (#21 Contas e Estoque)
 ├── .nojekyll             (vazio — impede o Jekyll de comer pastas com _)
 └── README.md
 ```
