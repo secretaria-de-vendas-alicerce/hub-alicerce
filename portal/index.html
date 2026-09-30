@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Portal do Corretor · Alicerce</title>
+  <link rel="icon" href="favicon.ico" sizes="48x48">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#f4f4f5">
+  <meta name="description" content="Portal do Corretor da Alicerce — entre com a sua conta Google.">
+  <meta name="robots" content="noindex">
+  <!--
+    WRAPPER DO PORTAL DO CORRETOR (ORD-PORTAL-CORRETOR-001 §8) — REDIRECIONA, não embute
+    ------------------------------------------------------------------------------------
+    Copiado do wrapper da Agenda (agenda-comercial/wrapper/), pelo mesmo motivo: o projeto A do
+    Portal executa como QUEM ACESSA (o e-mail sai do Gmail do próprio corretor), e dentro de um
+    iframe o login do Google não acontece (F0 da Agenda, D3). O que este arquivo resolve é o roteador
+    /u/N/ da /exec crua, que abre na conta errada de quem tem duas contas logadas: a pessoa passa
+    pelo SELETOR DE CONTA do Google e, com ?e=<e-mail>, já com a conta certa escolhida.
+
+      .../hub-alicerce/portal/                -> seletor de conta
+      .../hub-alicerce/portal/?e=<e-mail>     -> seletor com aquela conta escolhida
+
+    Mora dentro do repo do Hub, como o wrapper do #13 (analises/) e o do #21 (contas/).
+    A /exec abaixo é a do deployment A do Portal (AKfycbyWZYe5…). Republicar com
+    `create-deployment -i <mesmo id>` MANTÉM o endereço; criar outro deployment o mata.
+  -->
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f7f9; --card: #ffffff; --ink: #14181f; --muted: #5b6472;
+      --accent: #b91c1c; --accent-ink: #ffffff; --line: #e3e7ec;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #10141a; --card: #171d25; --ink: #e9edf3; --muted: #99a3b2; --accent: #f87171; --accent-ink: #1c0606; --line: #253040; }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: grid; place-items: center; padding: 24px calc(16px + env(safe-area-inset-left)) calc(24px + env(safe-area-inset-bottom));
+    }
+    main { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; max-width: 26rem; width: 100%; text-align: center; }
+    .selo { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
+    .selo.ico { background: none; } .selo img { display: block; } /* icone proprio (ORD-ICONES-001 §4.1): a placa ja vem no desenho */
+    h1 { font-size: 20px; margin: 0 0 6px; }
+    p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+    a.btn {
+      display: block; padding: 14px 18px; min-height: 48px; border-radius: 12px;
+      background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600;
+    }
+    .nota { margin: 16px 0 0; font-size: 12.5px; }
+    code { background: rgba(127, 140, 160, .18); padding: 1px 5px; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="selo ico" aria-hidden="true">
+      <picture><source media="(prefers-color-scheme: dark)" srcset="portal-hub-escuro@2x.png">
+      <img src="portal-hub-claro@2x.png" width="56" height="56" alt="" onerror="var s=this.closest('.selo');s.classList.remove('ico');s.innerHTML=&quot;<svg width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'> <rect x='3' y='5' width='18' height='14' rx='2'/><path d='m3 7 9 6 9-6'/> </svg>&quot;"></picture>
+    </div>
+    <h1>Portal do Corretor</h1>
+    <p id="sub">Abrindo com a sua conta Google…</p>
+    <a class="btn" id="entrar" href="#">Entrar no Portal</a>
+    <p class="nota" id="nota">Se o Google abrir na conta errada, volte aqui e escolha a conta certa.</p>
+  </main>
+  <script>
+    (function () {
+      'use strict';
+      var EXEC = 'https://script.google.com/macros/s/AKfycbyWZYe5Il42RkywIsN_yhP1jbvh7yHGsjcSuMxd08SRy2jYCxHb9-xShv9HgVuenByfzg/exec';
+
+      /** Só e-mail com cara de e-mail entra no link: o `e` da URL vem de fora. */
+      function emailDaUrl() {
+        var m = /[?&]e=([^&]+)/.exec(window.location.search || '');
+        var e = m ? decodeURIComponent(m[1]).trim() : '';
+        return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e) ? e : '';
+      }
+
+      function destino(email) {
+        return 'https://accounts.google.com/AccountChooser?'
+          + (email ? 'Email=' + encodeURIComponent(email) + '&' : '')
+          + 'continue=' + encodeURIComponent(EXEC);
+      }
+
+      var email = emailDaUrl();
+      var url = destino(email);
+      var a = document.getElementById('entrar');
+      a.href = url;
+      if (email) {
+        document.getElementById('sub').textContent = 'Abrindo com a conta ' + email + '…';
+        document.getElementById('nota').textContent = 'O convite é para esta conta. Se o Google pedir para entrar, use ela.';
+      }
+      // o clique do botão é o caminho garantido; o automático é só a comodidade
+      window.setTimeout(function () { window.location.replace(url); }, 700);
+    })();
+  </script>
+  <noscript>
+    <p style="text-align:center">Ative o JavaScript, ou
+      <a href="https://script.google.com/macros/s/AKfycbyWZYe5Il42RkywIsN_yhP1jbvh7yHGsjcSuMxd08SRy2jYCxHb9-xShv9HgVuenByfzg/exec">abra o portal direto</a>.</p>
+  </noscript>
+</body>
+</html>
