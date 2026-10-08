@@ -12,94 +12,249 @@
   <meta name="description" content="Portal do Corretor da Alicerce — entre com a sua conta Google.">
   <meta name="robots" content="noindex">
   <!--
-    WRAPPER DO PORTAL DO CORRETOR (ORD-PORTAL-CORRETOR-001 §8) — REDIRECIONA, não embute
-    ------------------------------------------------------------------------------------
-    Copiado do wrapper da Agenda (agenda-comercial/wrapper/), pelo mesmo motivo: o projeto A do
-    Portal executa como QUEM ACESSA (o e-mail sai do Gmail do próprio corretor), e dentro de um
-    iframe o login do Google não acontece (F0 da Agenda, D3). O que este arquivo resolve é o roteador
-    /u/N/ da /exec crua, que abre na conta errada de quem tem duas contas logadas: a pessoa passa
-    pelo SELETOR DE CONTA do Google e, com ?e=<e-mail>, já com a conta certa escolhida.
+    WRAPPER DO PORTAL DO CORRETOR — a página de login (ORD-PORTAL-LOGIN-001 F3; contrato: ../CONTRATO-PORTAL-LOGIN.md §1)
+    -----------------------------------------------------------------------------------------------------------------------
+    Cópia do wrapper da Agenda (agenda-comercial/wrapper/, no ar desde 07/10). O projeto A executa como o
+    DONO. Quem a pessoa é sai daqui: o popup do Google (GIS, fluxo de código) dá um código, a /exec troca o
+    código por tokens e devolve uma sessão `s` (64 hex), que mora no localStorage deste endereço (ptl.s;
+    na mesma origem já moram agd.s e cor.s). Nada além do `s` fica no aparelho.
 
-      .../hub-alicerce/portal/                -> seletor de conta
-      .../hub-alicerce/portal/?e=<e-mail>     -> seletor com aquela conta escolhida
+    O escopo pede gmail.send: a pasta continua saindo do Gmail do corretor (Enviados dele), agora pela
+    API REST com o token dele, renovado pelo refresh que A guarda. Sem gmail.send no consentimento, o
+    código nem vai à /exec (SEM_GMAIL); A confere de novo no servidor.
 
-    Mora dentro do repo do Hub, como o wrapper do #13 (analises/) e o do #21 (contas/).
-    A /exec abaixo é a do deployment A do Portal (AKfycbyWZYe5…). Republicar com
-    `create-deployment -i <mesmo id>` MANTÉM o endereço; criar outro deployment o mata.
+    O app abre num <iframe credentialless> de tela cheia, NUNCA navegando a página para script.google.com:
+    no celular com várias contas o Google põe /u/N/ na frente e mostra "Não foi possível abrir o arquivo"
+    (F0 da Agenda, 07/10). O iframe credentialless não leva os cookies do Google; a identidade é o `s`.
+
+      .../hub-alicerce/portal/                -> "Entrar com Google", o Google mostra o seletor de conta
+      .../hub-alicerce/portal/?e=<e-mail>     -> o mesmo, com a conta do convite já sugerida (login_hint)
+
+    Mora no repo do Hub (portal/), no MESMO endereço do wrapper que redirecionava (convites, Agenda e Hub
+    apontam para ele). A fonte é portal-corretor/wrapper/; quem publica copia para portal/.
+    752268914025-5n8i734nd69t2o1tiih7bn4arhnj61vi.apps.googleusercontent.com e https://script.google.com/macros/s/AKfycbyWZYe5Il42RkywIsN_yhP1jbvh7yHGsjcSuMxd08SRy2jYCxHb9-xShv9HgVuenByfzg/exec: quem publica troca pelos valores reais (o client_id é público e é
+    o MESMO da Agenda; o client_secret NUNCA entra aqui). A /exec é a do deployment A do Portal
+    (AKfycbyWZYe5…); republicar com `-i <mesmo id>` a mantém (Regra 30). `tests/wrapper.test.js` cobra os dois.
   -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap">
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
     :root {
       color-scheme: light dark;
-      --bg: #f6f7f9; --card: #ffffff; --ink: #14181f; --muted: #5b6472;
-      --accent: #b91c1c; --accent-ink: #ffffff; --line: #e3e7ec;
+      --bg: #f4f4f5; --surface: #fafafa; --surface-2: #f0f0f1; --ink: #09090b; --muted: #6c6c75; --border: #e4e4e7;
+      --accent: #2563eb; --primary: #18181b; --primary-ink: #fafafa; --erro: #b42318;
+      --hi: rgba(255,255,255,.95); --lo: rgba(9,9,11,.09); --lo-deep: rgba(9,9,11,.16);
+      --shadow-raised: -4px -4px 10px var(--hi), 5px 5px 14px var(--lo);
+      --shadow-pressed: inset 2px 2px 5px var(--lo-deep), inset -2px -2px 5px var(--hi);
+      --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-display: "Sora", var(--font-body);
     }
     @media (prefers-color-scheme: dark) {
-      :root { --bg: #10141a; --card: #171d25; --ink: #e9edf3; --muted: #99a3b2; --accent: #f87171; --accent-ink: #1c0606; --line: #253040; }
+      :root {
+        --bg: #111114; --surface: #18181b; --surface-2: #1f1f23; --ink: #fafafa; --muted: #a1a1aa; --border: #27272a;
+        --accent: #3b82f6; --primary: #fafafa; --primary-ink: #09090b; --erro: #f97066;
+        --hi: rgba(255,255,255,.035); --lo: rgba(0,0,0,.55); --lo-deep: rgba(0,0,0,.7);
+      }
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
-      margin: 0; background: var(--bg); color: var(--ink);
-      font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      display: grid; place-items: center; padding: 24px calc(16px + env(safe-area-inset-left)) calc(24px + env(safe-area-inset-bottom));
+      margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 var(--font-body);
+      display: grid; place-items: center;
+      padding: 24px calc(16px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
     }
-    main { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 28px 24px; max-width: 26rem; width: 100%; text-align: center; }
-    .selo { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; }
-    .selo.ico { background: none; } .selo img { display: block; } /* icone proprio (ORD-ICONES-001 §4.1): a placa ja vem no desenho */
-    h1 { font-size: 20px; margin: 0 0 6px; }
-    p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
-    a.btn {
-      display: block; padding: 14px 18px; min-height: 48px; border-radius: 12px;
-      background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600;
+    main { background: var(--surface); box-shadow: var(--shadow-raised); border-radius: 24px; padding: 32px 24px 28px; max-width: 26rem; width: 100%; text-align: center; }
+    .selo { width: 60px; height: 60px; margin: 0 auto 18px; border-radius: 16px; background: var(--primary); color: var(--primary-ink); display: grid; place-items: center; }
+    .selo.ico { background: none; } .selo img { display: block; } /* ícone próprio (ORD-ICONES-001 §4.1): a placa já vem no desenho */
+    h1 { font: 700 24px/1.25 var(--font-display); margin: 0 0 6px; }
+    p { margin: 0; color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+    #sub { margin-bottom: 24px; }
+    button {
+      display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 48px; padding: 12px 18px;
+      border: 0; border-radius: 12px; background: var(--primary); color: var(--primary-ink); box-shadow: var(--shadow-raised);
+      font: 600 17px/1.2 var(--font-body); cursor: pointer; transition: box-shadow 150ms ease-out, transform 100ms ease-out, opacity 150ms ease-out;
     }
-    .nota { margin: 16px 0 0; font-size: 12.5px; }
-    code { background: rgba(127, 140, 160, .18); padding: 1px 5px; border-radius: 5px; font-size: 12px; overflow-wrap: anywhere; }
+    button:active:not(:disabled) { box-shadow: var(--shadow-pressed); transform: scale(.98); }
+    button:disabled { opacity: .55; cursor: default; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .g { width: 20px; height: 20px; flex: none; background: #fff; border-radius: 50%; padding: 2px; }
+    #msg { margin-top: 16px; font-size: 15px; color: var(--erro); }
+    #msg:empty { display: none; }
+    #msg a { color: inherit; }
+    .nota { margin-top: 18px; font-size: 13px; }
+    #app { display: none; position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+    body[data-estado="app"] { padding: 0; }
+    body[data-estado="app"] main { display: none; }
+    body[data-estado="app"] #app { display: block; }
+    @media (min-width: 641px) { body { font-size: 15px; } h1 { font-size: 26px; } button { font-size: 15px; } p, #msg { font-size: 14px; } }
+    @media (prefers-reduced-motion: reduce) { button { transition: none; } }
   </style>
 </head>
-<body>
+<body data-estado="carregando">
   <main>
     <div class="selo ico" aria-hidden="true">
       <picture><source media="(prefers-color-scheme: dark)" srcset="portal-hub-escuro@2x.png">
-      <img src="portal-hub-claro@2x.png" width="56" height="56" alt="" onerror="var s=this.closest('.selo');s.classList.remove('ico');s.innerHTML=&quot;<svg width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'> <rect x='3' y='5' width='18' height='14' rx='2'/><path d='m3 7 9 6 9-6'/> </svg>&quot;"></picture>
+      <img src="portal-hub-claro@2x.png" width="60" height="60" alt="" onerror="var s=this.closest('.selo');s.classList.remove('ico');s.innerHTML=&quot;<svg width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'> <path d='M22 2 11 13'/><path d='M22 2 15 22l-4-9-9-4z'/> </svg>&quot;"></picture>
     </div>
     <h1>Portal do Corretor</h1>
-    <p id="sub">Abrindo com a sua conta Google…</p>
-    <a class="btn" id="entrar" href="#">Entrar no Portal</a>
-    <p class="nota" id="nota">Se o Google abrir na conta errada, volte aqui e escolha a conta certa.</p>
+    <p id="sub">Entre com a sua conta Google.</p>
+    <button type="button" id="entrar" disabled>
+      <svg class="g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.6 13.3l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C.9 16.6 0 20.2 0 24s.9 7.4 2.6 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.8-5.8l-7.4-5.7c-2.1 1.4-4.8 2.2-8.4 2.2-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>
+      <span id="rotulo">Entrar com Google</span>
+    </button>
+    <p id="msg" role="status" aria-live="polite"></p>
+    <p class="nota" id="nota">O Google vai pedir para o Portal enviar e-mail em seu nome. É assim que a pasta sai do seu Gmail e fica nos seus Enviados.</p>
   </main>
+  <iframe id="app" credentialless referrerpolicy="no-referrer" allow="clipboard-write; fullscreen" title="Portal do Corretor"></iframe>
   <script>
     (function () {
       'use strict';
+      var CLIENT_ID = '752268914025-5n8i734nd69t2o1tiih7bn4arhnj61vi.apps.googleusercontent.com';
       var EXEC = 'https://script.google.com/macros/s/AKfycbyWZYe5Il42RkywIsN_yhP1jbvh7yHGsjcSuMxd08SRy2jYCxHb9-xShv9HgVuenByfzg/exec';
+      var CHAVE = 'ptl.s';
+      var ESCOPOS = 'openid email https://www.googleapis.com/auth/gmail.send';
+      var PRAZO = 30000; // a /exec fria leva segundos; sem prazo, "Entrando…" fica para sempre
+      var MSG = {
+        NAO_CONVIDADO: 'Seu e-mail ainda não foi convidado. Peça ao seu gerente para te chamar na Agenda Comercial.',
+        SEM_REFRESH: 'Não consegui ligar ao seu Gmail. Abra myaccount.google.com/permissions, remova a Agenda Comercial e entre de novo. É o mesmo acesso da Agenda: depois, entre de novo nela também.',
+        TENTE_DE_NOVO: 'Não consegui entrar agora. Tente de novo em instantes.',
+        RECUSADO: 'Não consegui entrar. Tente de novo.',
+        VENCEU: 'Sua sessão terminou. Entre de novo com o Google.',
+        SEM_GMAIL: 'Não consegui ligar ao seu Gmail: a permissão de enviar e-mail ficou desmarcada. Entre de novo e deixe-a marcada.',
+        FECHOU: 'Não consegui entrar: a janela do Google foi fechada antes do fim.',
+        POPUP: 'Não consegui abrir a janela do Google. Libere as janelas (pop-ups) para este site e tente de novo.',
+        SEM_GOOGLE: 'Não consegui carregar o login do Google. Confira a internet e recarregue a página.',
+      };
+      var corpo = document.body;
+      var botao = document.getElementById('entrar');
+      var rotulo = document.getElementById('rotulo');
+      var msg = document.getElementById('msg');
+      var cliente = null;
 
-      /** Só e-mail com cara de e-mail entra no link: o `e` da URL vem de fora. */
+      /** Só e-mail com cara de e-mail vira login_hint: o `e` da URL vem de fora. */
       function emailDaUrl() {
         var m = /[?&]e=([^&]+)/.exec(window.location.search || '');
-        var e = m ? decodeURIComponent(m[1]).trim() : '';
+        var e = '';
+        try { e = m ? decodeURIComponent(m[1]).trim() : ''; } catch (x) { e = ''; }
         return /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(e) ? e : '';
       }
+      function valida(s) { return typeof s === 'string' && /^[0-9a-f]{64}$/.test(s); }
+      function ler() { try { return localStorage.getItem(CHAVE); } catch (x) { return null; } }
+      function guardar(s) { try { localStorage.setItem(CHAVE, s); } catch (x) { /* sem armazenamento: entra, mas pede o login de novo na próxima */ } }
+      function apagar() { try { localStorage.removeItem(CHAVE); } catch (x) { /* nada a apagar */ } }
 
-      function destino(email) {
-        return 'https://accounts.google.com/AccountChooser?'
-          + (email ? 'Email=' + encodeURIComponent(email) + '&' : '')
-          + 'continue=' + encodeURIComponent(EXEC);
+      /** Mensagem em primeira pessoa; o endereço das permissões vira link. */
+      function dizer(texto) {
+        msg.textContent = '';
+        var alvo = 'myaccount.google.com/permissions';
+        var i = texto.indexOf(alvo);
+        if (i < 0) { msg.textContent = texto; return; }
+        var a = document.createElement('a');
+        a.href = 'https://' + alvo; a.target = '_blank'; a.rel = 'noopener'; a.textContent = alvo;
+        msg.appendChild(document.createTextNode(texto.slice(0, i)));
+        msg.appendChild(a);
+        msg.appendChild(document.createTextNode(texto.slice(i + alvo.length)));
       }
+      function estado(nome) {
+        corpo.setAttribute('data-estado', nome);
+        botao.disabled = nome !== 'pronto' || !cliente;
+        rotulo.textContent = nome === 'entrando' ? 'Entrando…' : nome === 'carregando' ? 'Conferindo…' : 'Entrar com Google';
+      }
+
+      /** POST text/plain (sem preflight) e segue o 302 do Apps Script (F0, item 6). */
+      function pedir(dados) {
+        return Promise.race([
+          fetch(EXEC, { method: 'POST', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(dados) })
+            .then(function (r) { return r.json(); }),
+          new Promise(function (_, nao) { setTimeout(function () { nao(new Error('prazo')); }, PRAZO); }),
+        ]);
+      }
+
+      /** A /exec num iframe credentialless de tela cheia: sem cookies do Google, sem /u/N/. */
+      function abrir(s) {
+        document.getElementById('app').src = EXEC + '?s=' + s;
+        estado('app');
+      }
+
+      function trocar(code) {
+        estado('entrando');
+        dizer('');
+        pedir({ acao: 'login', code: code, aparelho: String(navigator.userAgent || '').slice(0, 80) })
+          .then(function (r) {
+            if (r && r.ok && valida(r.s)) { guardar(r.s); abrir(r.s); return; }
+            estado('pronto');
+            dizer(MSG[r && r.motivo] || MSG.TENTE_DE_NOVO);
+          })
+          .catch(function () { estado('pronto'); dizer(MSG.TENTE_DE_NOVO); });
+      }
+
+      function prepararGoogle(email, tentativas) {
+        if (!window.google || !google.accounts || !google.accounts.oauth2) {
+          if (tentativas > 75) { if (corpo.getAttribute('data-estado') === 'pronto') dizer(MSG.SEM_GOOGLE); return; }
+          setTimeout(function () { prepararGoogle(email, tentativas + 1); }, 200);
+          return;
+        }
+        cliente = google.accounts.oauth2.initCodeClient({
+          client_id: CLIENT_ID, scope: ESCOPOS, ux_mode: 'popup', login_hint: email || undefined,
+          callback: function (r) {
+            if (!r || r.error || !r.code) { estado('pronto'); dizer(MSG.RECUSADO); return; }
+            // o consentimento do Google deixa desmarcar o Gmail; sem ele a pasta não sai (A confere de novo: SEM_GMAIL)
+            if (r.scope && r.scope.indexOf('gmail.send') < 0) { estado('pronto'); dizer(MSG.SEM_GMAIL); return; }
+            trocar(r.code);
+          },
+          error_callback: function (err) {
+            estado('pronto');
+            dizer(err && err.type === 'popup_failed_to_open' ? MSG.POPUP : MSG.FECHOU);
+          },
+        });
+        if (corpo.getAttribute('data-estado') === 'pronto') estado('pronto');
+      }
+
+      // A avisa, de dentro do iframe, que a sessão venceu, foi revogada, que o Google desligou o Gmail (GMAIL_DESLIGADO,
+      // E1) ou que a pessoa tocou em Sair (CONTRATO-PORTAL-LOGIN §1).
+      // Só do HtmlService (o conteúdo vem de *.googleusercontent.com): outra origem não derruba a sessão de ninguém.
+      window.addEventListener('message', function (ev) {
+        if (!/^https:\/\/[a-z0-9.-]+\.googleusercontent\.com$/.test(String(ev.origin || ''))) return;
+        if (!ev.data || ev.data.tipo !== 'sessao-vencida') return;
+        apagar();
+        document.getElementById('app').src = 'about:blank';
+        estado('pronto');
+        dizer(MSG.VENCEU);
+      });
+
+      botao.addEventListener('click', function () {
+        if (!cliente || botao.disabled) return;
+        dizer('');
+        cliente.requestCode();
+      });
 
       var email = emailDaUrl();
-      var url = destino(email);
-      var a = document.getElementById('entrar');
-      a.href = url;
-      if (email) {
-        document.getElementById('sub').textContent = 'Abrindo com a conta ' + email + '…';
-        document.getElementById('nota').textContent = 'O convite é para esta conta. Se o Google pedir para entrar, use ela.';
+      if (email) document.getElementById('sub').textContent = 'Entre com a conta ' + email + '.';
+      prepararGoogle(email, 0);
+
+      // sessão guardada: confere com a /exec antes de abrir (o iframe é de outra origem; daqui não se lê o que ele mostra)
+      var s = ler();
+      if (!valida(s)) {
+        if (s) apagar();
+        estado('pronto');
+      } else {
+        estado('carregando');
+        pedir({ acao: 'sessao', s: s })
+          .then(function (r) {
+            if (r && r.ok) { abrir(s); return; }
+            // a ponte A→B tropeçou (B fora do ar): a sessão pode estar boa, fica guardada como na rede caída
+            if (r && r.motivo === 'TENTE_DE_NOVO') { estado('pronto'); dizer(MSG.TENTE_DE_NOVO); return; }
+            apagar();
+            estado('pronto');
+          })
+          // a rede falhou, não a sessão: ela fica guardada e a próxima visita confere de novo
+          .catch(function () { estado('pronto'); dizer(MSG.TENTE_DE_NOVO); });
       }
-      // o clique do botão é o caminho garantido; o automático é só a comodidade
-      window.setTimeout(function () { window.location.replace(url); }, 700);
     })();
   </script>
   <noscript>
-    <p style="text-align:center">Ative o JavaScript, ou
-      <a href="https://script.google.com/macros/s/AKfycbyWZYe5Il42RkywIsN_yhP1jbvh7yHGsjcSuMxd08SRy2jYCxHb9-xShv9HgVuenByfzg/exec">abra o portal direto</a>.</p>
+    <p style="text-align:center; padding:16px">Ative o JavaScript para entrar no Portal do Corretor.</p>
   </noscript>
 </body>
 </html>
