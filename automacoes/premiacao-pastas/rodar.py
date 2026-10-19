@@ -190,9 +190,9 @@ def main():
         print('AVISO: PNG não gerado:', e, file=sys.stderr)
 
     # e-mail: cartão em HTML (tabelas + estilos inline), no mesmo desenho do PNG; Gmail não exibe SVG
-    T = {'batida': ('META BATIDA', 'Prêmio liberado', '#3bd07a', 'rgba(59,208,122,.14)', '#3bd07a'),
-         'ritmo': ('NO RITMO', 'No ritmo para bater a meta', '#38d3f5', 'rgba(56,211,245,.14)', '#38d3f5'),
-         'atras': ('ABAIXO DO RITMO', 'Abaixo do ritmo da meta', '#ff4d45', 'rgba(255,77,69,.14)', '#ff4d45')}[estado]
+    T = {'batida': ('META BATIDA', 'Prêmio liberado', '#15803d', '#f0fdf4', '#16a34a'),
+         'ritmo': ('NO RITMO', 'No ritmo para bater a meta', '#1d4ed8', '#eff6ff', '#2563eb'),
+         'atras': ('ABAIXO DO RITMO', 'Abaixo do ritmo da meta', '#b91c1c', '#fef2f2', '#dc2626')}[estado]
     d2 = lambda iso: iso[8:10] + '/' + iso[5:7]
     assunto = f"Premiação de Pastas · {d2(snap['data'])} · {total}/{meta} · {T[0].capitalize()}"
     resta = max(sem['diasUteis'] - sem['diaUtil'], 0)
@@ -206,13 +206,13 @@ def main():
     pct = min(100, round(total / meta * 100))
     rk5 = rk[:5]; mx = max([r['pastas'] for r in rk5] or [1])
     linhas_rk = ''.join(
-        f'<tr><td style="{F}padding:6px 0;font-size:15px;color:#f7f3ea;{"font-weight:700" if r["pastas"] == mx else ""}">{r["corretor"]}'
-        f'<div style="font-size:11px;letter-spacing:1px;color:#b9b1a1;font-weight:500">{r["equipe"]}</div></td>'
+        f'<tr><td style="{F}padding:6px 0;font-size:15px;color:#1c1b19;{"font-weight:700" if r["pastas"] == mx else ""}">{r["corretor"]}'
+        f'<div style="font-size:11px;letter-spacing:1px;color:#5f5a52;font-weight:500">{r["equipe"]}</div></td>'
         f'<td width="200" style="padding:6px 0 6px 12px"><table cellpadding="0" cellspacing="0" border="0" width="{max(8, round(170 * r["pastas"] / mx))}"><tr>'
-        f'<td height="14" style="background:{T[4] if r["pastas"] == mx else "#4a3d27"};border-radius:7px;font-size:0;line-height:0">&nbsp;</td></tr></table></td>'
-        f'<td width="32" align="right" style="{F}font-size:16px;font-weight:700;color:#f7f3ea">{r["pastas"]}</td></tr>' for r in rk5) or \
-        f'<tr><td style="{F}font-size:14px;color:#b9b1a1">Nenhuma pasta enviada na semana ainda.</td></tr>'
-    eqs = ' &nbsp;·&nbsp; '.join(f'<b style="color:#f7f3ea">{e["equipe"]}</b> {e["pastas"]}' for e in porEq if e['equipe'] != '(sem equipe)')
+        f'<td height="14" style="background:{T[4] if r["pastas"] == mx else "#d6cfc2"};border-radius:7px;font-size:0;line-height:0">&nbsp;</td></tr></table></td>'
+        f'<td width="32" align="right" style="{F}font-size:16px;font-weight:700;color:#1c1b19">{r["pastas"]}</td></tr>' for r in rk5) or \
+        f'<tr><td style="{F}font-size:14px;color:#5f5a52">Nenhuma pasta enviada na semana ainda.</td></tr>'
+    eqs = ' &nbsp;·&nbsp; '.join(f'<b style="color:#1c1b19">{e["equipe"]}</b> {e["pastas"]}' for e in porEq if e['equipe'] != '(sem equipe)')
     extra = []
     if snap['empateNoTopo'] and rk: extra.append('Empate no 1º lugar: o app desempata pela qualidade e, depois, pelo carimbo.')
     uf = snap['ultimaFechada']
@@ -221,35 +221,35 @@ def main():
                else 'meta batida, empate no 1º lugar a desempatar no app' if uf['metaBatida']
                else f"meta não batida ({uf.get('totalApp', uf['total'])} de {uf['meta']}), sem prêmio")
         extra.append(f"Semana {uf['numero']} fechada: {res}." + ('' if uf['fonte'] == 'app' else ' (prévia; ainda não apurada no app)'))
-    corpo = f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050403"><tr><td align="center" style="padding:20px 8px">
-<table width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#15100a;border:2px solid #c8902c;border-radius:24px;box-shadow:0 0 0 1px #3a2a10">
+    corpo = f"""<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff"><tr><td align="center" style="padding:20px 8px">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:#ffffff;border:2px solid #c8902c;border-radius:24px;">
 <tr><td style="padding:28px 32px 0">
  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-  <td style="{S}font-size:30px;font-weight:700;letter-spacing:1px;color:#ffc24a">PREMIAÇÃO DA SEMANA {sem['numero']}</td>
-  <td align="right" style="{F}font-size:12px;color:#b9b1a1">{d2(snap['data'])} · {snap['hora']}</td></tr>
-  <tr><td style="{S}font-size:18px;font-weight:700;color:#f7f3ea;padding-top:4px">{sem['periodo']} <span style="font-weight:500;color:#b9b1a1">{d2(sem['de'])} a {d2(sem['ate'])}</span></td>
-  <td align="right" style="{F}font-size:12px;color:#b9b1a1">dia útil {sem['diaUtil']} de {sem['diasUteis']}</td></tr></table>
+  <td style="{S}font-size:30px;font-weight:700;letter-spacing:1px;color:#8a5a00">PREMIAÇÃO DA SEMANA {sem['numero']}</td>
+  <td align="right" style="{F}font-size:12px;color:#5f5a52">{d2(snap['data'])} · {snap['hora']}</td></tr>
+  <tr><td style="{S}font-size:18px;font-weight:700;color:#1c1b19;padding-top:4px">{sem['periodo']} <span style="font-weight:500;color:#5f5a52">{d2(sem['de'])} a {d2(sem['ate'])}</span></td>
+  <td align="right" style="{F}font-size:12px;color:#5f5a52">dia útil {sem['diaUtil']} de {sem['diasUteis']}</td></tr></table>
 </td></tr>
 <tr><td style="padding:24px 32px 0">
  <span style="{F}display:inline-block;background:{T[3]};color:{T[2]};font-size:12px;font-weight:700;letter-spacing:2px;padding:7px 14px;border-radius:999px">{T[0]}</span>
- <div style="{S}font-size:28px;font-weight:700;letter-spacing:-0.5px;color:#f7f3ea;padding-top:12px">{T[1]}</div>
- <div style="{F}font-size:15px;color:#b9b1a1;padding-top:4px">{l2}</div>
+ <div style="{S}font-size:28px;font-weight:700;letter-spacing:-0.5px;color:#1c1b19;padding-top:12px">{T[1]}</div>
+ <div style="{F}font-size:15px;color:#5f5a52;padding-top:4px">{l2}</div>
 </td></tr>
 <tr><td style="padding:22px 32px 0">
  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-  <td style="{S}font-size:64px;font-weight:800;letter-spacing:-2px;color:#f7f3ea;line-height:1">{total}<span style="font-size:18px;font-weight:500;letter-spacing:0;color:#b9b1a1"> de {meta} pastas</span></td></tr>
-  <tr><td style="padding-top:12px"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#5a4420;border-radius:8px"><tr>
+  <td style="{S}font-size:64px;font-weight:800;letter-spacing:-2px;color:#1c1b19;line-height:1">{total}<span style="font-size:18px;font-weight:500;letter-spacing:0;color:#5f5a52"> de {meta} pastas</span></td></tr>
+  <tr><td style="padding-top:12px"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#e6dccb;border-radius:8px"><tr>
    <td width="{max(pct, 2)}%" height="14" style="background:{T[4]};border-radius:8px;font-size:0;line-height:0">&nbsp;</td><td style="font-size:0;line-height:0">&nbsp;</td></tr></table></td></tr>
-  <tr><td style="{F}font-size:12px;color:#b9b1a1;padding-top:6px">{pct}% da meta · ritmo esperado até hoje: {str(esperado).replace('.', ',')}</td></tr></table>
+  <tr><td style="{F}font-size:12px;color:#5f5a52;padding-top:6px">{pct}% da meta · ritmo esperado até hoje: {str(esperado).replace('.', ',')}</td></tr></table>
 </td></tr>
 <tr><td style="padding:24px 32px 0">
- <div style="{F}font-size:11px;font-weight:700;letter-spacing:2px;color:#b9b1a1;padding-bottom:4px">QUEM LIDERA</div>
+ <div style="{F}font-size:11px;font-weight:700;letter-spacing:2px;color:#5f5a52;padding-bottom:4px">QUEM LIDERA</div>
  <table width="100%" cellpadding="0" cellspacing="0" border="0">{linhas_rk}</table>
- {''.join(f'<div style="{F}font-size:13px;color:#b9b1a1;padding-top:10px">{x}</div>' for x in extra)}
+ {''.join(f'<div style="{F}font-size:13px;color:#5f5a52;padding-top:10px">{x}</div>' for x in extra)}
 </td></tr>
-<tr><td style="padding:20px 32px 26px"><div style="border-top:1px solid #5a4420;padding-top:14px;{F}font-size:13px;color:#b9b1a1">{eqs}</div>
- <div style="{F}font-size:13px;color:#b9b1a1;padding-top:6px">Prêmio {snap['premio']} ao 1º se a Alicerce bater {meta} na semana.</div>
- {f'<div style="padding-top:14px"><a href="{a.url}" style="{F}font-size:15px;font-weight:600;color:#ffc24a;text-decoration:none">Abrir o histórico e baixar as artes →</a></div>' if a.url else ''}
+<tr><td style="padding:20px 32px 26px"><div style="border-top:1px solid #e6dccb;padding-top:14px;{F}font-size:13px;color:#5f5a52">{eqs}</div>
+ <div style="{F}font-size:13px;color:#5f5a52;padding-top:6px">Prêmio {snap['premio']} ao 1º se a Alicerce bater {meta} na semana.</div>
+ {f'<div style="padding-top:14px"><a href="{a.url}" style="{F}font-size:15px;font-weight:600;color:#8a5a00;text-decoration:none">Abrir o histórico e baixar as artes →</a></div>' if a.url else ''}
 </td></tr></table></td></tr></table>"""
     texto = f"{total} de {meta} pastas na semana {sem['numero']} ({d2(sem['de'])} a {d2(sem['ate'])}). {T[1]}. {l2}." + (' ' + ' '.join(extra).replace('<b>', '').replace('</b>', '') if extra else '') + (f' Histórico: {a.url}' if a.url else '')
     # ---- artes do dia (as mesmas da página) publicadas no hub-alicerce para entrar no corpo do e-mail ----
@@ -259,8 +259,8 @@ def main():
         # O conector do Gmail remove <img> do corpo. A arte vai como botão que abre a imagem,
         # logo acima do cartão com os números.
         F2 = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
-        botoes = ''.join(f'<tr><td align="center" style="padding:0 0 12px"><a href="{u}" style="{F2}display:inline-block;background:#ffc24a;color:#1a0f05;font-size:17px;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px">Ver a arte: {esc_html(t)} →</a></td></tr>' for u, t in urls)
-        corpo = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050403"><tr><td align="center" style="padding:20px 8px 4px">'
+        botoes = ''.join(f'<tr><td align="center" style="padding:0 0 12px"><a href="{u}" style="{F2}font-size:18px;font-weight:700;color:#8a5a00;text-decoration:underline">Ver a arte: {esc_html(t)} →</a></td></tr>' for u, t in urls)
+        corpo = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ffffff"><tr><td align="center" style="padding:20px 8px 4px">'
                  f'<table cellpadding="0" cellspacing="0" border="0">{botoes}</table></td></tr></table>' + corpo)
         texto = texto + ' Artes: ' + ' | '.join(t + ': ' + u for u, t in urls)
     json.dump({'assunto': assunto, 'html': corpo, 'texto': texto}, open(os.path.join(a.saida, 'email.json'), 'w'), ensure_ascii=False, indent=1)
