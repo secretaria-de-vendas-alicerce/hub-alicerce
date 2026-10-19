@@ -256,12 +256,13 @@ def main():
     artes = gerar_artes(snap, fechadas, hoje, a.saida)
     urls = publicar_artes(artes, a.repo, hoje) if a.repo and artes else []
     if urls:
+        # O conector do Gmail remove <img> do corpo. A arte vai como botão que abre a imagem,
+        # logo acima do cartão com os números.
         F2 = "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"
-        imgs = ''.join(f'<tr><td align="center" style="padding:0 0 18px"><img src="{u}" alt="{esc_html(t)}" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;border-radius:14px"></td></tr>' for u, t in urls)
-        corpo = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050403"><tr><td align="center" style="padding:20px 8px">'
-                 f'<table width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%">{imgs}'
-                 + (f'<tr><td align="center" style="padding:4px 0 8px"><a href="{a.url}" style="{F2}font-size:15px;font-weight:600;color:#ffc24a;text-decoration:none">Abrir o histórico e baixar as artes →</a></td></tr>' if a.url else '')
-                 + '</table></td></tr></table>')
+        botoes = ''.join(f'<tr><td align="center" style="padding:0 0 12px"><a href="{u}" style="{F2}display:inline-block;background:#ffc24a;color:#1a0f05;font-size:17px;font-weight:700;text-decoration:none;padding:14px 26px;border-radius:12px">Ver a arte: {esc_html(t)} →</a></td></tr>' for u, t in urls)
+        corpo = (f'<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050403"><tr><td align="center" style="padding:20px 8px 4px">'
+                 f'<table cellpadding="0" cellspacing="0" border="0">{botoes}</table></td></tr></table>' + corpo)
+        texto = texto + ' Artes: ' + ' | '.join(t + ': ' + u for u, t in urls)
     json.dump({'assunto': assunto, 'html': corpo, 'texto': texto}, open(os.path.join(a.saida, 'email.json'), 'w'), ensure_ascii=False, indent=1)
     open(os.path.join(a.saida, 'email.html'), 'w').write('<meta charset="utf-8">' + corpo)
     print(json.dumps({'assunto': assunto, 'estado': estado, 'total': total, 'fechadas': [f['id'] for f in fechadas]}, ensure_ascii=False))
