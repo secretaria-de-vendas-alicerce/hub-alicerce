@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alicerce — Central de Leads</title>
+  <link rel="icon" href="favicon.ico" sizes="48x48">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#f4f4f5">
+  <meta name="description" content="Central de Leads — leads do tráfego pago da Alicerce: repasse, qualificação e cobrança.">
+  <!--
+    WRAPPER ANTI /u/N/ — por que este arquivo existe
+    -------------------------------------------------
+    O web app do Apps Script e servido em script.google.com/macros/s/.../exec.
+    Quando o visitante tem 2+ contas Google logadas, o Google redireciona a /exec
+    para /u/1/, /u/2/... chuta o indice errado e mostra "Nao foi possivel abrir o
+    arquivo". Carregando a MESMA /exec dentro de um <iframe> a partir de um dominio
+    que NAO e google.com, o Google entrega o app como sub-recurso e nao roda esse
+    roteador de conta — abre igual em qualquer navegador, com qualquer conta.
+
+    A identidade do operador vem do LOGIN DO PROPRIO APP (PIN), nao da
+    conta Google.
+
+    Pre-requisitos (ja feitos no app):
+      - Implantacao: "Executar como: Eu" + "Quem pode acessar: Qualquer pessoa".
+      - doGet(): setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).
+
+    A /exec abaixo e a do deployment criado em 24/10/2026 (hoje @1,
+    v1.0.0). Mora junto do hub, como o /contas/ do #21 (ORD-LEADS-001). Publicar de novo com
+    `deploy -i <mesmo id>` mantem este link; criar OUTRO deployment o mata (Regra 30).
+  -->
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; background: #0f1115; }
+    /* iframe ocupa o viewport inteiro, respeitando notch no mobile */
+    #app {
+      position: fixed; inset: 0; width: 100%; height: 100%;
+      border: 0; display: block;
+    }
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: #e6e8eb; text-align: center;
+    }
+    #fallback a { color: #7aa2ff; }
+    .loading {
+      position: fixed; inset: 0; display: flex;
+      align-items: center; justify-content: center;
+      font: 14px system-ui, sans-serif; color: #8b94a3;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Carregando Central de Leads…</div>
+
+  <!--
+    credentialless: carrega o iframe num contexto efemero, SEM enviar os cookies
+    de sessao do Google (igual a uma aba anonima). E isso que contorna o roteador
+    de conta /u/N/. Suportado em Chromium (Chrome/Edge 110+). Firefox/Safari
+    ignoram o atributo (fallback: link direto).
+  -->
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbz93JTXWSJWkCZa3PEL6x6xBoXGF1enC2lZN9Pser6gQNBiVDm0BSjFdORUflbAvEdeGw/exec"
+    title="Alicerce — Central de Leads"
+    allow="clipboard-write; clipboard-read; fullscreen"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('loading').style.display='none'"></iframe>
+
+  <div id="fallback">
+    <div>
+      <p><strong>Nao foi possivel carregar.</strong></p>
+      <p>Abra o link diretamente:
+        <a id="directLink" href="https://script.google.com/macros/s/AKfycbz93JTXWSJWkCZa3PEL6x6xBoXGF1enC2lZN9Pser6gQNBiVDm0BSjFdORUflbAvEdeGw/exec" target="_blank" rel="noopener">abrir Central de Leads</a>.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Se o iframe nao sinalizar load em ~12s, oferece o link direto como rede de seguranca.
+    // O onload dispara igual numa pagina 404: a conferencia do link e de FORA (Regra 30).
+    setTimeout(function () {
+      var ld = document.getElementById('loading');
+      if (ld && ld.style.display !== 'none') {
+        ld.style.display = 'none';
+        document.getElementById('fallback').style.display = 'flex';
+      }
+    }, 12000);
+  </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ wrapper/
 ├── index.html            -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/
 ├── analises/index.html   -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/analises/  (#13)
 ├── contas/index.html     -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/contas/  (#21 Contas e Estoque)
+├── leads/index.html      -> https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/leads/  (#25 Central de Leads)
 ├── .nojekyll             (vazio — impede o Jekyll de comer pastas com _)
 └── README.md
 ```
