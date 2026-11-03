@@ -207,8 +207,11 @@
   /* ---------- resumo do período 1920x1080 ---------- */
   function arteResumo(nomePeriodo, semanas, dia, op) {
     var W = 1920, H = 1080, o = [];
-    var lista = semanas.slice().sort(function (a, b) { return a.de < b.de ? -1 : 1; }).map(function (s) { return dados(s, false); });
-    if (dia && dia.semana && dia.semana.periodo === nomePeriodo) lista.push(dados(dia, true));
+    // Só as semanas que COMEÇAM no mês do período: a semana que já cai no mês seguinte (ex.: 01–03/11 em Outubro) fica fora do resumo.
+    var ord = semanas.slice().sort(function (a, b) { return a.de < b.de ? -1 : 1; });
+    var mesP = ord.length ? String(ord[0].de).slice(0, 7) : (dia && dia.semana ? String(dia.semana.de).slice(0, 7) : '');
+    var lista = ord.filter(function (s) { return String(s.de).slice(0, 7) === mesP; }).map(function (s) { return dados(s, false); });
+    if (dia && dia.semana && dia.semana.periodo === nomePeriodo && String(dia.semana.de).slice(0, 7) === mesP) lista.push(dados(dia, true));
     var fechadas = lista.filter(function (x) { return x.tipo !== 'parcial'; });
     var batidas = fechadas.filter(function (x) { return x.tipo === 'campeao' || x.tipo === 'aguardando'; }).length;
     o.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '">' + defs());
