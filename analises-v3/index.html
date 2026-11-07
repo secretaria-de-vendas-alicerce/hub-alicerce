@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Alicerce — Análises</title>
+  <meta name="description" content="Gerenciador de Análises v3 (pastas de crédito) — Alicerce.">
+  <link rel="icon" type="image/png" href="https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/icones/analises/favicon-32.png">
+  <link rel="apple-touch-icon" href="https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/icones/analises/apple-touch-icon.png">
+  <!--
+    Wrapper da v3 do #13 (ORD-ANALISES-V3-001, fase R). Espelho versionado: onde ele vive de verdade é o repo
+    público `secretaria-de-vendas-alicerce/hub-alicerce`, arquivo `analises-v3/index.html` (ver ../README.md
+    para publicar e para conferir). O wrapper dos analistas (`analises/`, a /exec da @67) não muda.
+
+    A /exec daqui é a da IMPLANTAÇÃO NOVA da v3 (o mesmo projeto, outro deploymentId), com `?app=v3`:
+    a @68 (commit b32c0e5), criada em 07/11 (roteiro, passo 4).
+
+    Ponte da sessão (CONTRATO-V3 §4, molde da Central de Leads): a tela pede o token guardado aqui
+    (`av3-sessao-get` → `av3-sessao-value`) e manda guardar ou apagar (`av3-sessao-set`). Só se responde a
+    mensagem que veio do iframe da v3 (ev.source) com origem do Google; a resposta vai para essa origem,
+    nunca '*'. O token mora no localStorage DESTE endereço (github.io), não no da /exec.
+
+    COMO CONFERIR (nunca "o iframe carregou"):
+      curl -s -L -o /dev/null -w "%{http_code}" "<a /exec>?app=v3"   # 200, nunca 404 (GET, não HEAD)
+  -->
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; background: #fbfbfd; }
+    @media (prefers-color-scheme: dark) { html, body { background: #0d1117; } }
+    #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+    #fallback {
+      position: fixed; inset: 0; display: none;
+      align-items: center; justify-content: center; padding: 24px;
+      font: 15px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; text-align: center;
+    }
+    .loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column; gap: 12px;
+      align-items: center; justify-content: center;
+      font: 14px system-ui, sans-serif; color: #8b949e; pointer-events: none;
+    }
+    .loading img { width: 56px; height: 56px; }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <img src="https://secretaria-de-vendas-alicerce.github.io/hub-alicerce/icones/analises/analises-hub-claro@2x.png" alt="" onerror="this.remove()">
+    Carregando o Análises…
+  </div>
+
+  <iframe
+    id="app"
+    credentialless
+    src="https://script.google.com/macros/s/AKfycbwc73XyaQAnCQ3ibUIVj_GpT_egEYK9b2IFM9P66tQAcn45bZ4uMrdjWngE1IlCkuf_/exec?app=v3"
+    title="Alicerce — Análises"
+    allow="clipboard-write; clipboard-read"
+    referrerpolicy="no-referrer"
+    onload="document.getElementById('loading').style.display='none'"></iframe>
+
+  <div id="fallback">
+    <div>
+      <p><strong>Não foi possível carregar.</strong></p>
+      <p>Abra o link diretamente: <a href="https://script.google.com/macros/s/AKfycbwc73XyaQAnCQ3ibUIVj_GpT_egEYK9b2IFM9P66tQAcn45bZ4uMrdjWngE1IlCkuf_/exec?app=v3" target="_blank" rel="noopener">abrir o Análises</a>.</p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var CHAVE = 'av3-sessao';
+      var app = document.getElementById('app');
+      /* A /exec responde de script.google.com e a página dela roda em *.googleusercontent.com. */
+      function doGoogle(origem) {
+        return origem === 'https://script.google.com' || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origem);
+      }
+      window.addEventListener('message', function (ev) {
+        if (ev.source !== app.contentWindow || !doGoogle(ev.origin) || !ev.data) return;
+        var d = ev.data;
+        try {
+          if (d.tipo === 'av3-sessao-get') {
+            ev.source.postMessage({ tipo: 'av3-sessao-value', value: localStorage.getItem(CHAVE) || '' }, ev.origin);
+          } else if (d.tipo === 'av3-sessao-set') {
+            if (typeof d.value === 'string' && d.value) localStorage.setItem(CHAVE, d.value); else localStorage.removeItem(CHAVE);
+          }
+        } catch (e) {
+          /* sem armazenamento (aba anônima, bloqueio): a tela pede a senha */
+          if (d.tipo === 'av3-sessao-get') ev.source.postMessage({ tipo: 'av3-sessao-value', value: '' }, ev.origin);
+        }
+      });
+      setTimeout(function () {
+        var ld = document.getElementById('loading');
+        if (ld && ld.style.display !== 'none') {
+          ld.style.display = 'none';
+          document.getElementById('fallback').style.display = 'flex';
+        }
+      }, 12000);
+    })();
+  </script>
+</body>
+</html>
