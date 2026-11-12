@@ -15,10 +15,14 @@
     A /exec daqui é a da IMPLANTAÇÃO NOVA da v3 (o mesmo projeto, outro deploymentId), com `?app=v3`:
     a @68 (commit b32c0e5), criada em 07/11 (roteiro, passo 4).
 
-    Ponte da sessão (CONTRATO-V3 §4, molde da Central de Leads): a tela pede o token guardado aqui
-    (`av3-sessao-get` → `av3-sessao-value`) e manda guardar ou apagar (`av3-sessao-set`). Só se responde a
-    mensagem que veio do iframe da v3 (ev.source) com origem do Google; a resposta vai para essa origem,
-    nunca '*'. O token mora no localStorage DESTE endereço (github.io), não no da /exec.
+    Ponte (CONTRATO-V3 §4): a tela pede o token guardado aqui (`av3-sessao-get` → `av3-sessao-value`) e manda
+    guardar ou apagar (`av3-sessao-set`); o mesmo com o CÓDIGO da tela, por versão (`av3-codigo-get` com a chave →
+    `av3-codigo-value`; `av3-codigo-set`: Padrão Central V2, só código, nunca dado); e, quando sai uma versão nova,
+    `av3-recarregar` abre a página de novo (uma vez por minuto). Só se responde a mensagem da página do app, 2 frames
+    abaixo do iframe da v3 (/exec → painel → casca), com a origem de script do Google e no formato da ponte; a
+    resposta vai para essa origem, nunca '*'. Moram no localStorage DESTE endereço (github.io): o do iframe
+    credentialless some ao recarregar. Qualquer página deste github.io alcança esse storage: por isso a casca
+    confere o sha256 do código antes de rodar. O token não tem essa defesa (ver v3/MEDIDA-ABERTURA.md §8).
 
     COMO CONFERIR (nunca "o iframe carregou"):
       curl -s -L -o /dev/null -w "%{http_code}" "<a /exec>?app=v3"   # 200, nunca 404 (GET, não HEAD)
@@ -54,7 +58,7 @@
     title="Alicerce — Análises"
     allow="clipboard-write; clipboard-read"
     referrerpolicy="no-referrer"
-    onload="document.getElementById('loading').style.display='none'"></iframe>
+    onload="document.getElementById('loading').style.display='none';document.getElementById('fallback').style.display='none'"></iframe>
 
   <div id="fallback">
     <div>
@@ -65,24 +69,51 @@
 
   <script>
     (function () {
-      var CHAVE = 'av3-sessao';
+      var CHAVE = 'av3-sessao', CODIGO = 'av3-codigo', REABRIU = 'av3-reabriu';
       var app = document.getElementById('app');
-      /* A /exec responde de script.google.com e a página dela roda em *.googleusercontent.com. */
+      var TIPOS = { 'av3-sessao-get': 1, 'av3-sessao-set': 1, 'av3-codigo-get': 1, 'av3-codigo-set': 1, 'av3-recarregar': 1 };
+      /* o formato: tipo conhecido; o valor, quando vem, é texto; o token é o uuid do servidor; a chave do código é curta e sem símbolo */
+      function noFormato(d) {
+        if (!d || typeof d !== 'object' || !TIPOS[d.tipo]) return false;
+        if (d.value !== undefined && typeof d.value !== 'string') return false;
+        if (d.tipo === 'av3-sessao-set' && d.value && !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(d.value)) return false;
+        return !/codigo/.test(d.tipo) || (typeof d.chave === 'string' && /^[\w.-]{1,80}$/.test(d.chave));
+      }
+      /* A página do app roda no host de script DESTE projeto: n-<o id dele>-0lu-script.googleusercontent.com, o mesmo em todas as
+         medidas da @68 (com e sem login; _medidas/abertura-2026-11-09). Outro Apps Script tem outro id e fica de fora (Gerente, 11/11).
+         O número antes do "lu" fica aberto: não está medido se ele muda (com mais de uma conta Google no navegador, por exemplo), e
+         fixo ele derrubaria calado a sessão de quem caísse noutro; o id é o que separa este projeto dos outros.
+         Projeto novo = host novo: a tela pede a senha e baixa o código (falha segura) até este id ser trocado aqui */
       function doGoogle(origem) {
-        return origem === 'https://script.google.com' || /^https:\/\/[a-z0-9-]+\.googleusercontent\.com$/.test(origem);
+        return /^https:\/\/n-xu2d7tddbeud45lgicojf5qfymg5fhtazmluk2i-\d+lu-script\.googleusercontent\.com$/.test(origem);
+      }
+      /* e mora 2 frames abaixo do iframe: /exec -> painel -> página (medido na @68). Se o Google mudar isso, a tela pede a senha e baixa o código: falha segura */
+      function doIframe(w) {
+        var p = w && w.parent;
+        return !!p && p.parent === app.contentWindow;
       }
       window.addEventListener('message', function (ev) {
-        if (ev.source !== app.contentWindow || !doGoogle(ev.origin) || !ev.data) return;
+        if (!doIframe(ev.source) || !doGoogle(ev.origin) || !noFormato(ev.data)) return;
         var d = ev.data;
+        function responder(tipo, valor) { ev.source.postMessage({ tipo: tipo, value: valor }, ev.origin); }
         try {
-          if (d.tipo === 'av3-sessao-get') {
-            ev.source.postMessage({ tipo: 'av3-sessao-value', value: localStorage.getItem(CHAVE) || '' }, ev.origin);
-          } else if (d.tipo === 'av3-sessao-set') {
+          if (d.tipo === 'av3-sessao-get') responder('av3-sessao-value', localStorage.getItem(CHAVE) || '');
+          else if (d.tipo === 'av3-sessao-set') {
             if (typeof d.value === 'string' && d.value) localStorage.setItem(CHAVE, d.value); else localStorage.removeItem(CHAVE);
+          } else if (d.tipo === 'av3-codigo-get') {
+            var g = JSON.parse(localStorage.getItem(CODIGO) || 'null');
+            responder('av3-codigo-value', g && g.chave === d.chave ? g.value : '');
+          } else if (d.tipo === 'av3-codigo-set') {
+            if (typeof d.value === 'string' && d.value) localStorage.setItem(CODIGO, JSON.stringify({ chave: d.chave, value: d.value })); else localStorage.removeItem(CODIGO);
+          } else if (d.tipo === 'av3-recarregar') {
+            /* saiu uma versão nova: abre de novo daqui (dentro do frame do Apps Script, reload deixa a página em branco). No máximo uma
+               vez por minuto: a /exec que ainda serve a casca velha não vira laço, e a tela diz "Feche e abra de novo" */
+            if (Date.now() - Number(sessionStorage.getItem(REABRIU) || 0) > 60000) { sessionStorage.setItem(REABRIU, String(Date.now())); location.reload(); }
           }
         } catch (e) {
-          /* sem armazenamento (aba anônima, bloqueio): a tela pede a senha */
-          if (d.tipo === 'av3-sessao-get') ev.source.postMessage({ tipo: 'av3-sessao-value', value: '' }, ev.origin);
+          /* sem armazenamento (aba anônima, bloqueio) ou cheio: a tela pede a senha e baixa o código */
+          if (d.tipo === 'av3-sessao-get') responder('av3-sessao-value', '');
+          if (d.tipo === 'av3-codigo-get') responder('av3-codigo-value', '');
         }
       });
       setTimeout(function () {
